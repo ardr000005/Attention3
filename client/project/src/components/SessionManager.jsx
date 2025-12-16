@@ -67,6 +67,7 @@ export default function SessionManager({ studentId, onSessionComplete }) {
   }, [sessionActive]);
 
   const playAudio = useCallback((url) => {
+    if (!url) return; // Guard: backend may send null voice_url
     const fullUrl = `${API.defaults.baseURL}${url}`;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -122,7 +123,9 @@ export default function SessionManager({ studentId, onSessionComplete }) {
       if (res.action === 'play_voice') {
         setCurrentAction('Playing voice');
         setStatusMessage('Playing voice prompt...');
-        playAudio(res.voice_url);
+        if (res.voice_url) {
+          playAudio(res.voice_url);
+        }
       } else if (res.action === 'play_stimulus') {
         setCurrentAction('Playing stimulus');
         playVideo(res.stimulus_url, res.stimulus_name);
@@ -171,7 +174,9 @@ export default function SessionManager({ studentId, onSessionComplete }) {
 
       if (res.action === 'play_voice') {
         setCurrentAction('Playing voice');
-        playAudio(res.voice_url);
+        if (res.voice_url) {
+          playAudio(res.voice_url);
+        }
       }
     } catch (err) {
       console.error('Start session error:', err);

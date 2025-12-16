@@ -19,11 +19,29 @@ export default function HiddenCamera({ onLandmarks, isActive, studentId }) {
 
     (async () => {
       try {
-        const fm = await import('@mediapipe/face_mesh');
-        const cu = await import('@mediapipe/camera_utils');
+        // Try ESM imports first; fall back to loading via CDN script tags
+        let FaceMeshCtor, CameraCtor;
+        try {
+          const fm = await import('@mediapipe/face_mesh');
+          const cu = await import('@mediapipe/camera_utils');
+          FaceMeshCtor = fm.FaceMesh || fm.default?.FaceMesh;
+          CameraCtor = cu.Camera || cu.default?.Camera;
+        } catch (_) {
+          FaceMeshCtor = undefined;
+          CameraCtor = undefined;
+        }
 
-        const FaceMeshCtor = fm.FaceMesh || fm.default?.FaceMesh || fm;
-        const CameraCtor = cu.Camera || cu.default?.Camera || cu;
+        if (!FaceMeshCtor || !CameraCtor) {
+          // Dynamically load UMD scripts from CDN to get window.FaceMesh and window.Camera
+          const loadScript = (src) => new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src; s.async = true; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+          });
+          await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js');
+          await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+          FaceMeshCtor = window.FaceMesh;
+          CameraCtor = window.Camera;
+        }
 
         const faceMesh = new FaceMeshCtor({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
